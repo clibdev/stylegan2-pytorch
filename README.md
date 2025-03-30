@@ -111,3 +111,4 @@ python generate_onnx.py --seed 1518 --ckpt weights/stylegan2-ffhq-config-f.onnx
 # Reference
 
 * [TalkUHulk/realworld-stylegan2-encoder](https://github.com/TalkUHulk/realworld-stylegan2-encoder)
+* [NVlabs/stylegan2](https://github.com/NVlabs/stylegan2)
