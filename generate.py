@@ -4,6 +4,7 @@ import torch
 from torchvision import utils
 from model import Generator
 from tqdm import tqdm
+import numpy as np
 
 
 def generate(args, g_ema, device, mean_latent):
@@ -11,7 +12,9 @@ def generate(args, g_ema, device, mean_latent):
     with torch.no_grad():
         g_ema.eval()
         for i in tqdm(range(args.pics)):
-            sample_z = torch.randn(args.sample, args.latent, device=device)
+            rnd = np.random.RandomState(args.seed)
+            sample_z = torch.from_numpy(rnd.randn(args.sample, args.latent).astype(np.float32)).to(device)
+            #sample_z = torch.randn(args.sample, args.latent, device=device)
 
             sample, _ = g_ema(
                 [sample_z], truncation=args.truncation, truncation_latent=mean_latent
@@ -22,12 +25,12 @@ def generate(args, g_ema, device, mean_latent):
                 f"sample/{str(i).zfill(6)}.png",
                 nrow=1,
                 normalize=True,
-                range=(-1, 1),
+                value_range=(-1, 1),
             )
 
 
 if __name__ == "__main__":
-    device = "cuda"
+    device = "cpu"
 
     parser = argparse.ArgumentParser(description="Generate samples from the generator")
 
@@ -41,7 +44,7 @@ if __name__ == "__main__":
         help="number of samples to be generated for each image",
     )
     parser.add_argument(
-        "--pics", type=int, default=20, help="number of images to be generated"
+        "--pics", type=int, default=1, help="number of images to be generated"
     )
     parser.add_argument("--truncation", type=float, default=1, help="truncation ratio")
     parser.add_argument(
@@ -61,6 +64,12 @@ if __name__ == "__main__":
         type=int,
         default=2,
         help="channel multiplier of the generator. config-f = 2, else = 1",
+    )
+    parser.add_argument(
+        "--seed",
+        type=int,
+        default=None,
+        help="seed for generating random numbers",
     )
 
     args = parser.parse_args()

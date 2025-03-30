@@ -198,16 +198,10 @@ def fill_statedict(state_dict, vars, size, n_mlp):
 
 
 if __name__ == "__main__":
-    device = "cuda"
+    device = "cpu"
 
     parser = argparse.ArgumentParser(
         description="Tensorflow to pytorch model checkpoint converter"
-    )
-    parser.add_argument(
-        "--repo",
-        type=str,
-        required=True,
-        help="path to the offical StyleGAN2 repository with dnnlib/ folder",
     )
     parser.add_argument(
         "--gen", action="store_true", help="convert the generator weights"
@@ -225,9 +219,6 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    sys.path.append(args.repo)
-
-    import dnnlib
     from dnnlib import tflib
 
     tflib.init_tf()
@@ -265,8 +256,9 @@ if __name__ == "__main__":
         d_state = discriminator_fill_statedict(d_state, discriminator.vars, size)
         ckpt["d"] = d_state
 
+    directory = os.path.dirname(args.path)
     name = os.path.splitext(os.path.basename(args.path))[0]
-    torch.save(ckpt, name + ".pt")
+    torch.save(ckpt, directory + '/' + name + ".pt")
 
     batch_size = {256: 16, 512: 9, 1024: 4}
     n_sample = batch_size.get(size, 25)
@@ -282,20 +274,3 @@ if __name__ == "__main__":
             truncation_latent=latent_avg.to(device),
             randomize_noise=False,
         )
-
-    Gs_kwargs = dnnlib.EasyDict()
-    Gs_kwargs.randomize_noise = False
-    img_tf = g_ema.run(z, None, **Gs_kwargs)
-    img_tf = torch.from_numpy(img_tf).to(device)
-
-    img_diff = ((img_pt + 1) / 2).clamp(0.0, 1.0) - ((img_tf.to(device) + 1) / 2).clamp(
-        0.0, 1.0
-    )
-
-    img_concat = torch.cat((img_tf, img_pt, img_diff), dim=0)
-
-    print(img_diff.abs().max())
-
-    utils.save_image(
-        img_concat, name + ".png", nrow=n_sample, normalize=True, range=(-1, 1)
-    )
